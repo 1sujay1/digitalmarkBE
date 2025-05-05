@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Razorpay Payment Integration</title>
+</head>
+<body>
+
+  <button id="pay-button">Pay Now</button>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    document.getElementById('pay-button').onclick = function () {
+      const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODE3MTQzYWJhZThhYWZiNjMwMzA5YjYiLCJpYXQiOjE3NDYzNTA4MTgsImV4cCI6MTc0Njk1NTYxOH0.qEeTIRKySt8Jaem0f9G7rqPkMFzc5vZNU8mymKFl2ZE';
+
+      fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': token
+        },
+        body: JSON.stringify({ productIds: ["681730b3190f7f523885815b", "681730d3190f7f523885815f"] }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        const order = data.data;
+
+        const options = {
+          key: "rzp_test_LHP0r8PwqaWPt5",
+          amount: order.amount,
+          currency: order.currency,
+          name: "Demo Shop",
+          description: "Test Transaction",
+          order_id: order.id,
+          handler: function (response) {
+            // Call verify-payment API
+            fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'authorization': token
+              },
+              body: JSON.stringify({
+                razorpay_order_id: options.order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              }),
+            })
+            .then(res => res.json())
+            .then(result => {
+              if (result.status === 200) {
+                alert("✅ Payment Success! Payment ID: " + result.data.razorpay_payment_id);
+              } else {
+                alert("⚠️ Payment verification failed.");
+              }
+            })
+            .catch(err => {
+              console.error("Verification error:", err);
+              alert("❌ Error verifying payment.");
+            });
+          },
+          prefill: {
+            name: "Customer Name",
+            email: "customer@example.com",
+            contact: "9999999999",
+          },
+          theme: {
+            color: "#F37254",
+          },
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+      })
+      .catch(err => {
+        console.error("Order creation error:", err);
+        alert("❌ Failed to create Razorpay order.");
+      });
+    };
+  </script>
+</body>
+</html>
