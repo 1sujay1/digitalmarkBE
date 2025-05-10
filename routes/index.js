@@ -24,6 +24,12 @@ const {
   verifyPayment,
   getUserProducts,
 } = require("../controllers/orderController");
+const {
+  addToCart,
+  getMyCart,
+  updateCartItem,
+  clearCart,
+} = require("../controllers/cartController");
 const authorize = require("../middleware/authMiddleware");
 
 const roles = {
@@ -59,6 +65,12 @@ module.exports = (razorpayInstance) => {
   );
   router.post("/verify-payment",authorize(true, roles.customerAdmin), verifyPayment);
   router.get("/my-products",authorize(true, roles.customerAdmin), getUserProducts);
+
+  // Cart Routes
+  router.post("/cart/add", authorize(true, roles.customerAdmin), addToCart);
+  router.get("/cart", authorize(true, roles.customerAdmin), getMyCart);
+  router.put("/cart/update", authorize(true, roles.customerAdmin), updateCartItem);
+  router.delete("/cart/clear", authorize(true, roles.customerAdmin), clearCart);
 
   return router;
 };
