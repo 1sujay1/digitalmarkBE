@@ -30,6 +30,21 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
+    // Ensure slashedPrice is a positive number
+    if (!req.body.slashedPrice || req.body.slashedPrice <= 0) {
+      return handleErrorMessages(res, "Slashed price must be a positive number");
+    }
+
+    // Ensure discount is within a valid range (0-100)
+    if (!req.body.discount || req.body.discount < 0 || req.body.discount > 100) {
+      return handleErrorMessages(res, "Discount must be between 0 and 100");
+    }
+    // Convert discount and slashedPrice to Number
+    ['slashedPrice', 'discount'].forEach(key => req.body[key] = Number(req.body[key]));
+    // Calculate price dynamically based on slashedPrice and discount
+    req.body.price = req.body.slashedPrice - (req.body.slashedPrice * (req.body.discount || 0)) / 100;
+    // Round off the price to two decimal places
+    req.body.price = Math.floor(req.body.price);
     const product = new ProductModal(req.body);
     await product.save();
     return handleSuccessMessages(res, "Product created successfully", product, 201);

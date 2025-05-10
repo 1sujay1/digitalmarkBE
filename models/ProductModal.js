@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const ProductSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   price: { type: Number, required: true },
-  slashedPrice: { type: Number },
+  discount: { type: Number, default: 0 }, // Discount percentage (e.g., 10 for 10%)
+  slashedPrice: { type: Number }, // Deprecated if discount is used
   description: String,
   thumbnail: String,
   driveLink: { type: String, required: true },
