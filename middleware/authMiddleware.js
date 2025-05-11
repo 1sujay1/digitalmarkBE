@@ -5,7 +5,7 @@ const { UserModal, TokenModal } = require("../models");
 const authorize = (requireAuth = false, allowedRoles = []) => {
   return async (req, res, next) => {
     try {
-      if (!requireAuth) return next();
+      if (!requireAuth && !req?.headers?.authorization) return next();
 
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer "))

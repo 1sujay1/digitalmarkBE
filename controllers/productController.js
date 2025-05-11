@@ -1,9 +1,25 @@
-const { ProductModal } = require("../models");
+const { ProductModal, CartModal } = require("../models");
 const { handleSuccessMessages, handleErrorMessages } = require("../utils/responseMessages");
 
 exports.getAllProducts = async (req, res) => {
   try {
     const products = await ProductModal.find().select('-driveLink');
+    console.log("req?.decoded?.user_id", req?.decoded?.user_id);
+    if (req?.decoded?.user_id) {
+      const cartItem = await CartModal.findOne({ 
+        userId: req.decoded.user_id, 
+        "items.productId": { $in: products.map(p => p._id) } 
+      });
+
+      if (cartItem) {
+      products.forEach(product => {
+        const cartProduct = cartItem.items.find(item => item.productId.toString() === product._id.toString());
+        if (cartProduct) {
+          product._doc.quantity = cartProduct.quantity;
+        }
+      });
+      }
+    }
     return handleSuccessMessages(res, "Products fetched successfully", products);
   } catch (err) {
     return handleErrorMessages(res, err.message || "Failed to fetch products");
@@ -55,6 +71,39 @@ exports.createProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
+    // If slashedPrice is being updated
+    if (req.body.slashedPrice !== undefined) {
+      if (req.body.slashedPrice <= 0) {
+        return handleErrorMessages(res, "Slashed price must be a positive number");
+      }
+      req.body.slashedPrice = Number(req.body.slashedPrice);
+    }
+
+    // If discount is being updated
+    if (req.body.discount !== undefined) {
+      if (req.body.discount < 0 || req.body.discount > 100) {
+        return handleErrorMessages(res, "Discount must be between 0 and 100");
+      }
+      req.body.discount = Number(req.body.discount);
+    }
+
+    // Recalculate price if slashedPrice or discount is being updated
+    if (req.body.slashedPrice !== undefined || req.body.discount !== undefined) {
+      // Get the existing product to retain original values if one of them is missing
+      const existingProduct = await ProductModal.findById(req.params.id);
+      if (!existingProduct) return handleErrorMessages(res, "Product not found", 404);
+
+      const slashedPrice = req.body.slashedPrice !== undefined
+        ? req.body.slashedPrice
+        : existingProduct.slashedPrice;
+
+      const discount = req.body.discount !== undefined
+        ? req.body.discount
+        : existingProduct.discount;
+
+      req.body.price = Math.floor(slashedPrice - (slashedPrice * discount) / 100);
+    }
+
     const updatedProduct = await ProductModal.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -68,6 +117,7 @@ exports.updateProduct = async (req, res) => {
     return handleErrorMessages(res, err.message || "Failed to update product");
   }
 };
+
 
 exports.deleteProduct = async (req, res) => {
   try {

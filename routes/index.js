@@ -50,7 +50,7 @@ module.exports = (razorpayInstance) => {
   router.post("/admin/create-user",authorize(true, roles.admin), createUser);
 
   // Product Routes
-  router.get("/products", getAllProducts);
+  router.get("/products",authorize(false), getAllProducts);
   router.get("/product/:id", getProductById);
   router.post("/product",authorize(true, roles.admin), createProduct);
   router.put("/product/:id",authorize(true, roles.admin), updateProduct);

@@ -1,4 +1,4 @@
-const Cart = require("../models/cartModel");
+const Cart = require("../models/CartModal");
 const { handleSuccessMessages, handleErrorMessages } = require("../utils/responseMessages");
 
 exports.addToCart = async (req, res) => {
@@ -13,7 +13,7 @@ exports.addToCart = async (req, res) => {
 
     const itemIndex = cart.items.findIndex((item) => item.productId.toString() === productId);
     if (itemIndex > -1) {
-      cart.items[itemIndex].quantity += quantity;
+      cart.items[itemIndex].quantity = quantity || 1;
     } else {
       cart.items.push({ productId, quantity });
     }
