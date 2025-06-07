@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     address: { type: String }, 
     isEmailVerified: { type: Boolean, default: false },
     isMobileVerified: { type: Boolean, default: false },
-    roles:[{type:String,enum: ['CUSTOMER', 'ADMIN', 'MODERATOR'],default:'CUSTOMER'}],
+    roles: { type: [String], enum: ['CUSTOMER', 'ADMIN', 'MODERATOR'], default: ['CUSTOMER'] },
     isDeleted:{type:Boolean,default:false}
 },{timestamps:true});
 

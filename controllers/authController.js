@@ -6,7 +6,7 @@ const { UserModal ,OtpModal} = require("../models");
 
 // 📌 Send OTP (for sign up and verification)
 const sendOtp = async (req, res) => {
-  const { email, type } = req.body; // type can be 'email' or 'mobile'
+  const { email, type ,isRegister} = req.body; // type can be 'email' or 'mobile'
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
 
   try {
@@ -16,6 +16,11 @@ const sendOtp = async (req, res) => {
     if (type === "email") {
       if(!email)return handleErrorMessages(res, "Required Email");
 
+      // Check if the user is already registered with email and isEmailVerified
+      const existingUser = await UserModal.find({ email });
+      if (existingUser.length > 0 && existingUser[0].isEmailVerified) {
+        return handleErrorMessages(res, "Email already registered, Please login");
+      }
       otpData = await OtpModal.findOne({ email });
 
       if (!otpData) {
@@ -63,7 +68,7 @@ const verifyOtp = async (req, res) => {
       });
 
       if (!otpData || otpData.code !== otp || otpData.expiresAt < Date.now()) {
-        return handleSuccessMessages(res, "Invalid or expired OTP for email");
+        return handleErrorMessages(res, "Invalid or expired OTP for email");
       }
 
       // Mark email as verified in User
@@ -113,6 +118,7 @@ const signUp = async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     userObj.password = hashedPassword;
+    userObj.address = address;
     const user = await UserModal.create(userObj);
 
     return  generateTokenAndLogin(res,user,"User registered successfully");
@@ -126,7 +132,7 @@ const signUp = async (req, res) => {
 // 📌 Sign In
 const signInWithEmailPassword = async (req, res) => {
   const { email, password } = req.body;
-
+console.log(email,password)
   try {
     const user = await UserModal.findOne({ email });
 
@@ -179,12 +185,24 @@ const  generateTokenAndLogin = async (res,user,message)=>{
     data
   );
 }
-
+//create a function to get user by email
+const getUser = async (req, res) => {
+  const { email } = req.body;
+  try {
+    if(!email)return handleErrorMessages(res, "Required Email");
+    const user = await UserModal.findOne({ email });
+    if (!user) return handleErrorMessages(res, "User not found", 404);
+    return handleSuccessMessages(res, "User fetched successfully", user);
+  } catch (err) {
+    return handleErrorMessages(res, err.message || "Failed to fetch user");
+  }
+};
 module.exports = {
   sendOtp,
   verifyOtp,
   signUp,
   signInWithEmailPassword,
   logout,
-  createUser
+  createUser,
+  getUser,
 };

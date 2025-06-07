@@ -8,6 +8,7 @@ const {
   signInWithEmailPassword,
   logout,
   createUser,
+  getUser,
 } = require("../controllers/authController");
 
 const {
@@ -29,6 +30,7 @@ const {
   getMyCart,
   updateCartItem,
   clearCart,
+  removeCartItem, // Import the new controller function
 } = require("../controllers/cartController");
 const authorize = require("../middleware/authMiddleware");
 
@@ -48,6 +50,7 @@ module.exports = (razorpayInstance) => {
   router.post("/auth/signInWithEmailPassword", signInWithEmailPassword); // Returns token
   router.post("/auth/logout", logout); // Optional
   router.post("/admin/create-user",authorize(true, roles.admin), createUser);
+  router.post("/admin/get-user", getUser);
 
   // Product Routes
   router.get("/products",authorize(false), getAllProducts);
@@ -67,10 +70,11 @@ module.exports = (razorpayInstance) => {
   router.get("/my-products",authorize(true, roles.customerAdmin), getUserProducts);
 
   // Cart Routes
-  router.post("/cart/add", authorize(true, roles.customerAdmin), addToCart);
+  router.post("/cart/add", authorize(false, roles.customerAdmin), addToCart);
   router.get("/cart", authorize(true, roles.customerAdmin), getMyCart);
   router.put("/cart/update", authorize(true, roles.customerAdmin), updateCartItem);
   router.delete("/cart/clear", authorize(true, roles.customerAdmin), clearCart);
+  router.post("/cart/remove", authorize(true, roles.customerAdmin), removeCartItem); // New route
 
   return router;
 };

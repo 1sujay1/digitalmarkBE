@@ -12,15 +12,16 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     document.getElementById('pay-button').onclick = function () {
-      const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODE3MTQzYWJhZThhYWZiNjMwMzA5YjYiLCJpYXQiOjE3NDYzNTA4MTgsImV4cCI6MTc0Njk1NTYxOH0.qEeTIRKySt8Jaem0f9G7rqPkMFzc5vZNU8mymKFl2ZE';
+      const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODI2MjVjNDA4MDNhZDMzNTMyYTE4NTAiLCJpYXQiOjE3NDkyOTE5ODEsImV4cCI6MTc0OTg5Njc4MX0.jLsWyDn7xfkMvrnvMhlGiGyd4bf7cOr5KbiSxYug4n0';
 
       fetch('/api/create-order', {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'authorization': token
         },
-        body: JSON.stringify({ productIds: ["681730b3190f7f523885815b", "681730d3190f7f523885815f"] }),
+        body: JSON.stringify({ productIds: ["681730d3190f7f523885815f"] }),
       })
       .then(res => res.json())
       .then(data => {

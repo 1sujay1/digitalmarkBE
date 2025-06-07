@@ -7,7 +7,7 @@ const authorize = (requireAuth = false, allowedRoles = []) => {
     try {
       if (!requireAuth && !req?.headers?.authorization) return next();
 
-      const authHeader = req.headers.authorization;
+      const authHeader = req?.headers?.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer "))
         return res.status(401).json({ message: "Unauthorized" });
 
