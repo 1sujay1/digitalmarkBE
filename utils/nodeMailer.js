@@ -27,7 +27,7 @@ const sendBackupOtpEmail = async (toEmail, otp) => {
       html,
     });
 
-    console.log("✅ Backup OTP sent. Message ID:", info.messageId);
+    // console.log("✅ Backup OTP sent. Message ID:", info.messageId);
     return { status: 200, id: info.messageId };
   } catch (err) {
     console.error("❌ Error sending backup OTP email:", err);

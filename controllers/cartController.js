@@ -35,7 +35,7 @@ exports.getMyCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ userId }).populate("items.productId");
     if (!cart) return handleSuccessMessages(res, "Cart retrieved successfully", { items: [], totalCartPrice: 0 });
-console.log("cart", cart);
+// console.log("cart", cart);
     // Calculate totalCartPrice
     const totalCartPrice = cart.items.reduce((total, item) => {
       const productPrice = item?.productId?.price || 0; // Ensure price exists

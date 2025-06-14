@@ -7,7 +7,7 @@ const connectDB = async () => {
       useUnifiedTopology: true
     });
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-    console.log(process.env.MONGO_URI);
+    // console.log(process.env.MONGO_URI);
     // const products = [
     //   {
     //     name: "Complete HTML & CSS Course for Beginners",

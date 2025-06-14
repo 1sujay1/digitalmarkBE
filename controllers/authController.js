@@ -132,7 +132,7 @@ const signUp = async (req, res) => {
 // 📌 Sign In
 const signInWithEmailPassword = async (req, res) => {
   const { email, password } = req.body;
-console.log(email,password)
+// console.log(email,password)
   try {
     const user = await UserModal.findOne({ email });
 

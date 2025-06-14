@@ -18,7 +18,7 @@ const sendOtpEmail = async (email, otp) => {
 
     if(process.env.NODE_MAILER_ENABLED){
     const response= await sendNodemailerOTPEmail(email, otp)
-    console.log("Nodemailer response",response)
+    // console.log("Nodemailer response",response)
     if(response.status==200){
       return {status:200,mesage:"OTP sent successfully"}
     }else{
@@ -31,7 +31,7 @@ const sendOtpEmail = async (email, otp) => {
         subject: "Confirm Your Email for DigitalGrowthX",
         html: html,
       });
-      console.log("email prod resp",response)
+      // console.log("email prod resp",response)
       if(!response?.data || response?.error?.statusCode){
         return {status:response?.error?.statusCode,message:response?.error?.message}
       }

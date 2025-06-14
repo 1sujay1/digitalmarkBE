@@ -12,7 +12,7 @@ exports.getAllProducts = async (req, res) => {
       ];
     }
     const products = await ProductModal.find().select('-driveLink');
-    console.log("req?.decoded?.user_id in api", req?.decoded?.user_id);
+    // console.log("req?.decoded?.user_id in api", req?.decoded?.user_id);
     if (req?.decoded?.user_id) {
       const cartItem = await CartModal.findOne({ 
         userId: req.decoded.user_id, 
@@ -31,7 +31,7 @@ exports.getAllProducts = async (req, res) => {
             userId: req.decoded.user_id,
             paymentStatus: "PAID"
           })
-          console.log("orders", orders);
+          // console.log("orders", orders);
           if(orders.length){
             const orderedProductIds = orders.flatMap(order => order.products.map(p => p.productId.toString()));
             const filteredProducts = products.filter(product => !orderedProductIds.includes(product._id.toString()));

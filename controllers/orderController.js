@@ -46,26 +46,21 @@ exports.verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body;
-    console.log(
-      " razorpay_order_id, razorpay_payment_id, razorpay_signature",
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature
-    );
+   
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body.toString())
       .digest("hex");
-    console.log("expectedSignature", expectedSignature);
+    // console.log("expectedSignature", expectedSignature);
     const isValid = expectedSignature === razorpay_signature;
 
     if (!isValid) {
       return handleErrorMessages(res, "Invalid payment signature", 400);
     }
 const order = await OrderModal.findOne({ razorpayOrderId:razorpay_order_id });
-console.log("order", order);
+// console.log("order", order);
 // Extract product IDs from the order
 const orderedProductIds = order.products.map(p => p.productId);
 
@@ -87,7 +82,7 @@ const orderedProductIds = order.products.map(p => p.productId);
         },
       }
     );
-console.log("orderedProductIds", orderedProductIds);
+// console.log("orderedProductIds", orderedProductIds);
     // Remcove items from user's cart after successful payment
   const updateCartResp = await CartModal.updateOne(
   { userId: req.decoded.user_id },
@@ -99,7 +94,7 @@ console.log("orderedProductIds", orderedProductIds);
     }
   }
 );
-console.log("Cart update response:", updateCartResp);
+// console.log("Cart update response:", updateCartResp);
     return handleSuccessMessages(res, "Payment verified successfully", {
       razorpay_payment_id,
     });
@@ -152,7 +147,7 @@ exports.getUserProducts = async (req, res) => {
       userId: req.decoded.user_id,
       paymentStatus: "PAID"
     }).populate("products.productId");
-console.log("orders in getUserProducts", orders);
+// console.log("orders in getUserProducts", orders);
     const allProducts = orders.flatMap((order) =>
       order.products.map((p) => ({
         name: p.productId.name,
