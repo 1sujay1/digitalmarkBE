@@ -1,10 +1,18 @@
-const { ProductModal, CartModal } = require("../models");
+const { ProductModal, CartModal, OrderModal } = require("../models");
 const { handleSuccessMessages, handleErrorMessages } = require("../utils/responseMessages");
 
 exports.getAllProducts = async (req, res) => {
   try {
+    const { search } = req.query;
+    let query = {};
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
+    }
     const products = await ProductModal.find().select('-driveLink');
-    console.log("req?.decoded?.user_id", req?.decoded?.user_id);
+    console.log("req?.decoded?.user_id in api", req?.decoded?.user_id);
     if (req?.decoded?.user_id) {
       const cartItem = await CartModal.findOne({ 
         userId: req.decoded.user_id, 
@@ -19,6 +27,17 @@ exports.getAllProducts = async (req, res) => {
         }
       });
       }
+        const orders = await OrderModal.find({
+            userId: req.decoded.user_id,
+            paymentStatus: "PAID"
+          })
+          console.log("orders", orders);
+          if(orders.length){
+            const orderedProductIds = orders.flatMap(order => order.products.map(p => p.productId.toString()));
+            const filteredProducts = products.filter(product => !orderedProductIds.includes(product._id.toString()));
+            return handleSuccessMessages(res, "Products fetched successfully", filteredProducts);
+
+          }
     }
     return handleSuccessMessages(res, "Products fetched successfully", products);
   } catch (err) {
