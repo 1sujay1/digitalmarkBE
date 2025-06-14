@@ -76,7 +76,7 @@ module.exports = (razorpayInstance) => {
   router.post("/cart/add", authorize(false, roles.customerAdmin), addToCart);
   router.get("/cart", authorize(true, roles.customerAdmin), getMyCart);
   router.put("/cart/update", authorize(true, roles.customerAdmin), updateCartItem);
-  router.delete("/cart/clear", authorize(true, roles.customerAdmin), clearCart);
+  router.post("/cart/clear", authorize(true, roles.customerAdmin), clearCart);
   router.post("/cart/remove", authorize(true, roles.customerAdmin), removeCartItem); // New route
 
   //Admin Routes

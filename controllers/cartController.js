@@ -2,7 +2,7 @@ const Cart = require("../models/CartModal");
 const { handleSuccessMessages, handleErrorMessages } = require("../utils/responseMessages");
 
 exports.addToCart = async (req, res) => {
-  const { productId, quantity } = req.body;
+  const { productId } = req.body;
   const userId = req.decoded.user_id;
 
   try {
@@ -13,9 +13,9 @@ exports.addToCart = async (req, res) => {
 
     const itemIndex = cart.items.findIndex((item) => item.productId.toString() === productId);
     if (itemIndex > -1) {
-      cart.items[itemIndex].quantity = quantity || 1;
+      cart.items[itemIndex].quantity =  1;
     } else {
-      cart.items.push({ productId, quantity });
+      cart.items.push({ productId, quantity:1 });
     }
 
     await cart.save();
@@ -35,11 +35,11 @@ exports.getMyCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ userId }).populate("items.productId");
     if (!cart) return handleSuccessMessages(res, "Cart retrieved successfully", { items: [], totalCartPrice: 0 });
-
+console.log("cart", cart);
     // Calculate totalCartPrice
     const totalCartPrice = cart.items.reduce((total, item) => {
-      const productPrice = item.productId.price || 0; // Ensure price exists
-      return total + productPrice * item.quantity;
+      const productPrice = item?.productId?.price || 0; // Ensure price exists
+      return total + productPrice;
     }, 0);
 
     // Map items to include product details directly, removing productId key
@@ -87,7 +87,7 @@ exports.clearCart = async (req, res) => {
 
   try {
     await Cart.findOneAndDelete({ userId });
-    return handleSuccessMessages(res, "Cart cleared successfully");
+    return handleSuccessMessages(res, "Cart cleared successfully",{success: true});
   } catch (error) {
     console.error(error);
     return handleErrorMessages(res, "Failed to clear cart", error.message);
