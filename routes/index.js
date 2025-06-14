@@ -25,6 +25,7 @@ const {
   verifyPayment,
   failedPayment,
   getUserProducts,
+  isUserAdmin
 } = require("../controllers/orderController");
 const {
   addToCart,
@@ -78,5 +79,7 @@ module.exports = (razorpayInstance) => {
   router.delete("/cart/clear", authorize(true, roles.customerAdmin), clearCart);
   router.post("/cart/remove", authorize(true, roles.customerAdmin), removeCartItem); // New route
 
+  //Admin Routes
+  router.get("/admin/check", authorize(true, roles.admin), isUserAdmin);
   return router;
 };

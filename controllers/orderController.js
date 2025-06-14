@@ -175,3 +175,14 @@ console.log("orders in getUserProducts", orders);
     return handleErrorMessages(res, "Could not fetch user products");
   }
 };
+
+exports.isUserAdmin = async (req, res) => {
+  try {
+   
+    const isAdmin = req.decoded.role === "ADMIN";
+    return handleSuccessMessages(res, "User role fetched successfully", { isAdmin });
+  } catch (err) {
+    console.error("Error checking admin status:", err);
+    return handleErrorMessages(res, "Could not check user role");
+  }
+};
