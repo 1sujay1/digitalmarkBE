@@ -23,6 +23,7 @@ const {
 const {
   createOrder,
   verifyPayment,
+  failedPayment,
   getUserProducts,
 } = require("../controllers/orderController");
 const {
@@ -67,6 +68,7 @@ module.exports = (razorpayInstance) => {
     createOrder(razorpayInstance)
   );
   router.post("/verify-payment",authorize(true, roles.customerAdmin), verifyPayment);
+  router.post("/payment-failed",authorize(true, roles.customerAdmin), failedPayment);
   router.get("/my-products",authorize(true, roles.customerAdmin), getUserProducts);
 
   // Cart Routes

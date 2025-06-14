@@ -10,8 +10,20 @@ const OrderSchema = new mongoose.Schema({
   ],
   amountPaid: Number,
   razorpayOrderId: String,
-  status: { type: String, default: "PAID" },
-  createdAt: { type: Date, default: Date.now }
+  razorpayPaymentId: String,
+  razorpaySignature: String,
+  paymentStatus: { type: String, default: "PENDING" }, // PENDING, PAID, FAILED
+  createdAt: { type: Date, default: Date.now },
+  paymentResponse: {
+    type: mongoose.Schema.Types.Mixed, // Can hold any JSON
+    default: {}
+  },
+    isDeleted: { type: Boolean, default: false  },
+  paymentAttempts: [{
+  status: { type: String, enum: ["PAID", "FAILED"] },
+  response: mongoose.Schema.Types.Mixed,
+  attemptedAt: { type: Date, default: Date.now },
+}],
 },{timestamps:true});
 
 module.exports = mongoose.model("Order", OrderSchema);
