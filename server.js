@@ -50,6 +50,9 @@ app.use(cors());
 //   next();
 // });
 // Routes
+app.get("/", (req, res) => {
+  res.send("Hello World")// Serve the main HTML file
+});
 app.use("/api", routes(razorpayInstance));
 
 app.use(express.static(path.join(__dirname, 'public')));

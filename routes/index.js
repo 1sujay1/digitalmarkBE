@@ -44,7 +44,7 @@ const roles = {
 
 module.exports = (razorpayInstance) => {
   //Test Routes
-  router.get("/test", (req, res) => res.send("Hi, Welcome"));
+  router.get("/test", (req, res) => res.send("Hi, Welcome to the API!"));
   // Auth Routes
   router.post("/auth/email/send-otp", sendOtp);
   router.post("/auth/email/verify-otp", verifyOtp); // Returns token
