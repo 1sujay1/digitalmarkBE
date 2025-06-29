@@ -5,6 +5,13 @@ on:
     branches:
       - master  # or main
 
+  workflow_dispatch:
+    inputs:
+      deploy_branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'master'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,7 +29,9 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no root@31.97.61.58 '
             cd digitalmarkBE &&
-            git pull &&
+            git fetch origin &&
+            git checkout ${{ github.event.inputs.deploy_branch || 'master' }} &&
+            git pull origin ${{ github.event.inputs.deploy_branch || 'master' }} &&
             npm install &&
             pm2 restart server
           '
