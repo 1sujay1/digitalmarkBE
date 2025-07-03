@@ -18,6 +18,8 @@ const {
   updateProduct,
   deleteProduct,
   getAllProductsAdmin,
+  uploadProductThumbnail,
+  uploadProductImages,
 } = require("../controllers/productController");
 
 const {
@@ -34,7 +36,9 @@ const {
   clearCart,
   removeCartItem, // Import the new controller function
 } = require("../controllers/cartController");
+const { uploadSingleFile, uploadMultipleFiles } = require("../controllers/uploadController");
 const authorize = require("../middleware/authMiddleware");
+const multer = require("multer");
 
 const roles = {
   admin: ["ADMIN"],
@@ -81,5 +85,11 @@ module.exports = (razorpayInstance) => {
 
   //Admin Routes
   router.get("/admin/check", authorize(true, roles.admin), isUserAdmin);
+
+
+  //Upload Routes
+  router.post("/product/thumbnail/upload", authorize(true, roles.admin), uploadProductThumbnail);
+  router.post("/product/images/uploads", authorize(true, roles.admin), uploadProductImages);
+
   return router;
 };

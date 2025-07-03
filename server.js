@@ -6,17 +6,19 @@ require("dotenv").config();;
 const connectDB = require("./config/db");
 const razorpayInstance = require("./utils/razorpay");
 const routes = require("./routes/index");
-const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
+
+// const helmet = require('helmet');
+// const mongoSanitize = require('express-mongo-sanitize');
 
 const app = express();
 
 // Connect to MongoDB
 connectDB();
-
+app.use(express.static(path.join(__dirname, 'public')));
 // Middleware
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+const upload = require('./middleware/multer');
 app.use(
   session({
     secret: "secret123", // Use secure value in production
@@ -53,9 +55,9 @@ app.use(cors());
 app.get("/", (req, res) => {
   res.send("Hello World")// Serve the main HTML file
 });
-app.use("/api", routes(razorpayInstance));
+app.use("/api/v1", routes(razorpayInstance));
 
-app.use(express.static(path.join(__dirname, 'public')));
+
 // Server start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

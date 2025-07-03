@@ -1,5 +1,8 @@
 const { ProductModal, CartModal, OrderModal } = require("../models");
 const { handleSuccessMessages, handleErrorMessages } = require("../utils/responseMessages");
+const { uploadSingleFile, uploadMultipleFiles } = require("./uploadController");
+const path = require("path");
+const fs = require("fs");
 
 exports.getAllProducts = async (req, res) => {
   try {
@@ -129,7 +132,9 @@ exports.updateProduct = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    if (!updatedProduct) return handleErrorMessages(res, "Product not found", 404);
+    if (!updatedProduct) {
+      return handleErrorMessages(res, "Product not found", 404);
+    }
 
     return handleSuccessMessages(res, "Product updated successfully", updatedProduct);
   } catch (err) {
@@ -137,15 +142,45 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-
 exports.deleteProduct = async (req, res) => {
   try {
     const deletedProduct = await ProductModal.findByIdAndDelete(req.params.id);
 
-    if (!deletedProduct) return handleErrorMessages(res, "Product not found", 404);
+    if (!deletedProduct) {
+      return handleErrorMessages(res, "Product not found", 404);
+    }
 
     return handleSuccessMessages(res, "Product deleted successfully", deletedProduct);
   } catch (err) {
     return handleErrorMessages(res, err.message || "Failed to delete product");
   }
+};
+
+// Upload product thumbnail (single file)
+exports.uploadProductThumbnail = (req, res) => {
+  req.label = 'product-thumbnail'; // Set label for the file
+  req.urlPath='/uploads/products/thumbnails'; // Set URL path for the thumbnail
+  uploadSingleFile(req, res, () => {
+    if (!req.file) {
+      return handleErrorMessages(res, "No file uploaded");
+    }
+    return handleSuccessMessages(res, "Thumbnail uploaded successfully", { ...req.file, url: urlPath });
+  });
+};
+
+// Upload product images (multiple files)
+exports.uploadProductImages = (req, res) => {
+  req.label = 'product-image'; // Set label for the files
+  req.urlPath = '/uploads/products/images'; // Set URL path for the images
+  uploadMultipleFiles(req, res, () => {
+    if (!req.files || req.files.length === 0) {
+      return handleErrorMessages(res, "No files uploaded");
+    }
+    // Construct viewable URLs for each file
+    const filesWithUrls = req.files.map(file => ({
+      ...file,
+      url: `/uploads/products/images/${file.filename}`
+    }));
+    return handleSuccessMessages(res, "Product images uploaded successfully", filesWithUrls);
+  });
 };
