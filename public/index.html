@@ -1,84 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Razorpay Payment Integration</title>
-</head>
-<body>
+<!doctype html>
+<html>
+  <head>
+    <title>PhonePe Test Payment</title>
+  </head>
+  <body>
+    <h2>PhonePe Test Payment</h2>
+    <button id="payBtn">Pay Now</button>
 
-  <button id="pay-button">Pay Now</button>
+    <script>
+      document.getElementById("payBtn").addEventListener("click", async () => {
+        try {
+          // Step 1: Call your backend to create the PhonePe order
+          const res = await fetch("/api/v1/create-order", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              authorization:
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODY2YjU1ZGYwY2NiNzNlNGRiNmU4MTkiLCJpYXQiOjE3NTQ2NjQ5NjQsImV4cCI6MTc1NTI2OTc2NH0.7QLqMAbzOJ_VUEV2FQJfnvzDwcBASBIBilhPRnNO15E",
+            },
+            body: JSON.stringify({
+              productIds: ["6868a9ce68b03371cc9e07e3"],
+            }),
+          });
 
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    document.getElementById('pay-button').onclick = function () {
-      const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODI2MjVjNDA4MDNhZDMzNTMyYTE4NTAiLCJpYXQiOjE3NDkyOTE5ODEsImV4cCI6MTc0OTg5Njc4MX0.jLsWyDn7xfkMvrnvMhlGiGyd4bf7cOr5KbiSxYug4n0';
-
-      fetch('/api/create-order', {
-
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
-        body: JSON.stringify({ productIds: ["681730d3190f7f523885815f"] }),
-      })
-      .then(res => res.json())
-      .then(data => {
-        const order = data.data;
-
-        const options = {
-          key: "rzp_test_LHP0r8PwqaWPt5",
-          amount: order.amount,
-          currency: order.currency,
-          name: "Demo Shop",
-          description: "Test Transaction",
-          order_id: order.id,
-          handler: function (response) {
-            // Call verify-payment API
-            fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'authorization': token
-              },
-              body: JSON.stringify({
-                razorpay_order_id: options.order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
-              }),
-            })
-            .then(res => res.json())
-            .then(result => {
-              if (result.status === 200) {
-                alert("✅ Payment Success! Payment ID: " + result.data.razorpay_payment_id);
-              } else {
-                alert("⚠️ Payment verification failed.");
-              }
-            })
-            .catch(err => {
-              console.error("Verification error:", err);
-              alert("❌ Error verifying payment.");
-            });
-          },
-          prefill: {
-            name: "Customer Name",
-            email: "customer@example.com",
-            contact: "9999999999",
-          },
-          theme: {
-            color: "#F37254",
-          },
-        };
-
-        const rzp = new Razorpay(options);
-        rzp.open();
-      })
-      .catch(err => {
-        console.error("Order creation error:", err);
-        alert("❌ Failed to create Razorpay order.");
+          const data = await res.json();
+          console.log("Order creation response:", data);
+          if (data.status === 200) {
+            if (data?.data?.checkoutPageUrl) {
+              window.location.href = data.data.checkoutPageUrl;
+            } else {
+              alert("Failed to initiate payment");
+            }
+          } else {
+            alert("Failed to create order");
+          }
+        } catch (err) {
+          console.error("Error creating order:", err);
+          alert("Something went wrong.");
+        }
       });
-    };
-  </script>
-</body>
+    </script>
+  </body>
 </html>

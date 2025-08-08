@@ -27,8 +27,9 @@ const {
   verifyPayment,
   failedPayment,
   getUserProducts,
-  isUserAdmin
-} = require("../controllers/orderController");
+  isUserAdmin,
+  getOrderStatus,
+} = require("../controllers/phonepeController");
 const {
   addToCart,
   getMyCart,
@@ -36,7 +37,10 @@ const {
   clearCart,
   removeCartItem, // Import the new controller function
 } = require("../controllers/cartController");
-const { uploadSingleFile, uploadMultipleFiles } = require("../controllers/uploadController");
+const {
+  uploadSingleFile,
+  uploadMultipleFiles,
+} = require("../controllers/uploadController");
 const authorize = require("../middleware/authMiddleware");
 const multer = require("multer");
 
@@ -55,41 +59,79 @@ module.exports = (razorpayInstance) => {
   // router.post("/auth/signup", signUp);         // Returns token
   router.post("/auth/signInWithEmailPassword", signInWithEmailPassword); // Returns token
   router.post("/auth/logout", logout); // Optional
-  router.post("/admin/create-user",authorize(true, roles.admin), createUser);
+  router.post("/admin/create-user", authorize(true, roles.admin), createUser);
   router.post("/admin/get-user", getUser);
 
   // Product Routes
-  router.get("/products",authorize(false), getAllProducts);
+  router.get("/products", authorize(false), getAllProducts);
   router.get("/product/:id", getProductById);
-  router.post("/product",authorize(true, roles.admin), createProduct);
-  router.put("/product/:id",authorize(true, roles.admin), updateProduct);
-  router.delete("/product/:id",authorize(true, roles.admin), deleteProduct);
-  router.get("/admin/products",authorize(true, roles.admin), getAllProductsAdmin);
+  router.post("/product", authorize(true, roles.admin), createProduct);
+  router.put("/product/:id", authorize(true, roles.admin), updateProduct);
+  router.delete("/product/:id", authorize(true, roles.admin), deleteProduct);
+  router.get(
+    "/admin/products",
+    authorize(true, roles.admin),
+    getAllProductsAdmin
+  );
 
   // Order Routes
   router.post(
     "/create-order",
     authorize(true, roles.customerAdmin),
-    createOrder(razorpayInstance)
+    createOrder
   );
-  router.post("/verify-payment",authorize(true, roles.customerAdmin), verifyPayment);
-  router.post("/payment-failed",authorize(true, roles.customerAdmin), failedPayment);
-  router.get("/my-products",authorize(true, roles.customerAdmin), getUserProducts);
+  // New getOrderStatus route
+  router.get(
+    "/order-status/:merchantOrderId",
+    authorize(true, roles.customerAdmin),
+    getOrderStatus
+  );
+
+  router.post(
+    "/verify-payment",
+    authorize(true, roles.customerAdmin),
+    verifyPayment
+  );
+  router.post(
+    "/payment-failed",
+    authorize(true, roles.customerAdmin),
+    failedPayment
+  );
+  router.get(
+    "/my-products",
+    authorize(true, roles.customerAdmin),
+    getUserProducts
+  );
 
   // Cart Routes
   router.post("/cart/add", authorize(false, roles.customerAdmin), addToCart);
   router.get("/cart", authorize(true, roles.customerAdmin), getMyCart);
-  router.put("/cart/update", authorize(true, roles.customerAdmin), updateCartItem);
+  router.put(
+    "/cart/update",
+    authorize(true, roles.customerAdmin),
+    updateCartItem
+  );
   router.post("/cart/clear", authorize(true, roles.customerAdmin), clearCart);
-  router.post("/cart/remove", authorize(true, roles.customerAdmin), removeCartItem); // New route
+  router.post(
+    "/cart/remove",
+    authorize(true, roles.customerAdmin),
+    removeCartItem
+  ); // New route
 
   //Admin Routes
   router.get("/admin/check", authorize(true, roles.admin), isUserAdmin);
 
-
   //Upload Routes
-  router.post("/product/thumbnail/upload", authorize(true, roles.admin), uploadProductThumbnail);
-  router.post("/product/images/uploads", authorize(true, roles.admin), uploadProductImages);
+  router.post(
+    "/product/thumbnail/upload",
+    authorize(true, roles.admin),
+    uploadProductThumbnail
+  );
+  router.post(
+    "/product/images/uploads",
+    authorize(true, roles.admin),
+    uploadProductImages
+  );
 
   return router;
 };

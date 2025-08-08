@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 const session = require("express-session");
-require("dotenv").config();;
+require("dotenv").config();
 const connectDB = require("./config/db");
 const razorpayInstance = require("./utils/razorpay");
 const routes = require("./routes/index");
@@ -14,11 +14,11 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-const upload = require('./middleware/multer');
+const upload = require("./middleware/multer");
 app.use(
   session({
     secret: "secret123", // Use secure value in production
@@ -40,7 +40,6 @@ app.use(
 // }));
 app.use(cors());
 
-
 // app.use(function (req, res, next) {
 //   res.setHeader("Content-Security-Policy", "script-src 'self' https://checkout.razorpay.com");
 //   next();
@@ -53,10 +52,9 @@ app.use(cors());
 // });
 // Routes
 app.get("/", (req, res) => {
-  res.send("Hello World")// Serve the main HTML file
+  res.send("Hello World"); // Serve the main HTML file
 });
 app.use("/api/v1", routes(razorpayInstance));
-
 
 // Server start
 const PORT = process.env.PORT || 5000;
