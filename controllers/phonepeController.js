@@ -1,5 +1,6 @@
 const { PhonepeOrderModal, ProductModal, CartModal } = require("../models");
 const phonepeClient = require("../utils/phonepe");
+const { randomUUID } = require("crypto");
 const {
   CreateSdkOrderRequest,
   FetchPaymentStatusRequest,
@@ -40,8 +41,9 @@ exports.createOrder = async (req, res) => {
     const totalAmount = Math.floor(
       products.reduce((sum, p) => sum + p.price, 0)
     );
-    const merchantTransactionId = `txn_${Date.now()}`;
+    const merchantTransactionId = randomUUID();
     console.log("merchantTransactionId", merchantTransactionId);
+    const metaInfo = MetaInfo.builder().udf1("udf1").udf2("udf2").build();
     // Step 1: Create SDK Order
     const sdkOrderRequest = CreateSdkOrderRequest.StandardCheckoutBuilder()
       .merchantOrderId(merchantTransactionId)
@@ -54,9 +56,8 @@ exports.createOrder = async (req, res) => {
     const phonepeOrder = await phonepeClient.createSdkOrder(sdkOrderRequest);
     console.log("PhonePe Order Created:", phonepeOrder);
     // Step 2: Initiate Payment to get checkoutPageUrl
-    const metaInfo = MetaInfo.builder().build();
     const payRequest = StandardCheckoutPayRequest.builder()
-      .merchantOrderId(merchantTransactionId)
+      .merchantOrderId(phonepeOrder.orderId)
       .amount(totalAmount * 100)
       .redirectUrl(
         `${process.env.PHONEPE_CALLBACK_URL}/?merchantOrderId=${merchantTransactionId}`
