@@ -15,14 +15,17 @@ const fs = require("fs");
 exports.getAllProducts = async (req, res) => {
   try {
     const { search } = req.query;
-    let query = {};
+    let query = { isDeleted: false }; // Default query to fetch non-deleted products
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
     }
-    const products = await ProductModal.find().select("-driveLink");
+    const products = await ProductModal.find({
+      isDeleted: { $in: [false, null] },
+    }).select("-driveLink");
+    // console.log("products", products);
     // console.log("req?.decoded?.user_id in api", req?.decoded?.user_id);
     if (req?.decoded?.user_id) {
       console.log("req?.decoded?.user_id in api", req?.decoded?.user_id);

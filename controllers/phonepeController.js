@@ -146,9 +146,11 @@ exports.getOrderStatus = async (req, res) => {
       updateOps,
       { new: true }
     );
-
-    if (order.paymentStatus === "PAID") {
-      const orderedProductIds = order.products.map((p) => p.productId);
+    // console.log("Updated Order:", updatedOrder);
+    // console.log("order ", order);
+    if (updatedOrder.paymentStatus === "PAID") {
+      const orderedProductIds = updatedOrder.products.map((p) => p.productId);
+      // console.log("orderedProductIds", orderedProductIds);
       const updateCartResp = await CartModal.updateOne(
         { userId: req.decoded.user_id },
         {
@@ -159,6 +161,7 @@ exports.getOrderStatus = async (req, res) => {
           },
         }
       );
+      // console.log("updateCartResp", updateCartResp);
     }
 
     return handleSuccessMessages(res, "Order status fetched successfully", {
