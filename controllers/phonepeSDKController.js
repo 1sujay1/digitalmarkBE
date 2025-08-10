@@ -12,6 +12,86 @@ const {
   handleSuccessMessages,
 } = require("../utils/responseMessages");
 
+exports.createOrder = async (req, res) => {
+  try {
+    const { productIds } = req.body;
+
+    if (!productIds || !Array.isArray(productIds) || !productIds.length) {
+      return handleErrorMessages(res, "Product IDs are required.", 400);
+    }
+
+    const products = await ProductModal.find({ _id: { $in: productIds } });
+    if (!products.length) {
+      return handleErrorMessages(res, "No valid products found.", 400);
+    }
+    // Check if user already owns any of the products
+    const existingOrder = await PhonepeOrderModal.findOne({
+      userId: req.decoded.user_id,
+      "products.productId": { $in: productIds },
+      paymentStatus: { $in: ["PAID", "SUCCESS"] },
+    });
+
+    if (existingOrder) {
+      return handleErrorMessages(
+        res,
+        "You already own one or more of the selected products.",
+        400
+      );
+    }
+    const totalAmount = Math.floor(
+      products.reduce((sum, p) => sum + p.price, 0)
+    );
+    const merchantTransactionId = randomUUID();
+    console.log("merchantTransactionId", merchantTransactionId);
+    const metaInfo = MetaInfo.builder().udf1("udf1").udf2("udf2").build();
+    // Step 1: Create SDK Order
+    const sdkOrderRequest = CreateSdkOrderRequest.StandardCheckoutBuilder()
+      .merchantOrderId(merchantTransactionId)
+      .amount(totalAmount * 100) // in paise
+      .redirectUrl(
+        `${process.env.PHONEPE_CALLBACK_URL}/?merchantOrderId=${merchantTransactionId}`
+      )
+      .build();
+
+    const phonepeOrder = await phonepeClient.createSdkOrder(sdkOrderRequest);
+    console.log("PhonePe Order Created:", phonepeOrder);
+    // Step 2: Initiate Payment to get checkoutPageUrl
+    const payRequest = StandardCheckoutPayRequest.builder()
+      .merchantOrderId(phonepeOrder.orderId)
+      .amount(totalAmount * 100)
+      .redirectUrl(
+        `${process.env.PHONEPE_CALLBACK_URL}/?merchantOrderId=${merchantTransactionId}`
+      )
+      .metaInfo(metaInfo)
+      .build();
+
+    const payResponse = await phonepeClient.pay(payRequest);
+    console.log("Payment Response:", payResponse);
+    // Step 3: Save in DB
+    const order = new PhonepeOrderModal({
+      userId: req.decoded.user_id,
+      products: products.map((p) => ({ productId: p._id, price: p.price })),
+      amountPaid: totalAmount,
+      merchantTransactionId,
+      paymentStatus: "PENDING",
+      paymentResponse: payResponse,
+      orderResponse: phonepeOrder,
+    });
+
+    await order.save();
+
+    return handleSuccessMessages(res, "Order created successfully", {
+      merchantTransactionId,
+      checkoutPageUrl: payResponse.redirectUrl,
+    });
+  } catch (err) {
+    console.error("Error creating PhonePe order:", err);
+    return handleErrorMessages(
+      res,
+      "Something went wrong while creating order."
+    );
+  }
+};
 function mapPhonepeStatus(phonepeState) {
   switch (phonepeState) {
     case "COMPLETED":
@@ -83,7 +163,6 @@ exports.createPayment = async (req, res) => {
 
     return handleSuccessMessages(res, "Order created successfully", {
       phonepeRedirectUrl: createPaymentResponse.data.redirectUrl,
-      merchantOrderId,
       phonepeCallbackUrl: `${process.env.PHONEPE_CALLBACK_URL}/?merchantOrderId=${merchantOrderId}`,
     });
   } catch (err) {
@@ -98,23 +177,14 @@ exports.createPayment = async (req, res) => {
  * GET ORDER STATUS
  * Calls PhonePe's getOrderStatus API, updates DB, and returns status.
  */
-
-exports.fetchPaymentOrderStatus = async (req, res) => {
+exports.getOrderStatus = async (req, res) => {
   try {
     const { merchantOrderId } = req.params;
-    const responseData = await phonepeClient.getOrderStatus(merchantOrderId);
-    console.log("getOrderStatus responseData", responseData);
-    if (responseData.status !== 200) {
-      return handleErrorMessages(
-        res,
-        responseData.message || "Failed to fetch order status"
-      );
-    }
-    const response = responseData.data;
+    const response = await phonepeClient.getOrderStatus(merchantOrderId);
     const mappedStatus = mapPhonepeStatus(response.state);
 
     const order = await PhonepeOrderModal.findOne({
-      merchantOrderId,
+      merchantTransactionId: merchantOrderId,
     });
 
     if (!order) {
@@ -140,7 +210,72 @@ exports.fetchPaymentOrderStatus = async (req, res) => {
     }
 
     const updatedOrder = await PhonepeOrderModal.findOneAndUpdate(
-      { merchantOrderId },
+      { merchantTransactionId: merchantOrderId },
+      updateOps,
+      { new: true }
+    );
+    // console.log("Updated Order:", updatedOrder);
+    // console.log("order ", order);
+    if (updatedOrder.paymentStatus === "PAID") {
+      const orderedProductIds = updatedOrder.products.map((p) => p.productId);
+      // console.log("orderedProductIds", orderedProductIds);
+      const updateCartResp = await CartModal.updateOne(
+        { userId: req.decoded.user_id },
+        {
+          $pull: {
+            items: {
+              productId: { $in: orderedProductIds },
+            },
+          },
+        }
+      );
+      // console.log("updateCartResp", updateCartResp);
+    }
+
+    return handleSuccessMessages(res, "Order status fetched successfully", {
+      status: updatedOrder.paymentStatus,
+      response,
+    });
+  } catch (err) {
+    console.error("Error fetching order status:", err);
+    return handleErrorMessages(res, "Something went wrong", 500);
+  }
+};
+
+exports.getPhonepeWebOrderStatus = async (req, res) => {
+  try {
+    const { merchantOrderId } = req.params;
+    const response = await phonepeClient.getOrderStatus(merchantOrderId);
+    const mappedStatus = mapPhonepeStatus(response.state);
+
+    const order = await PhonepeOrderModal.findOne({
+      merchantTransactionId: merchantOrderId,
+    });
+
+    if (!order) {
+      return handleErrorMessages(res, "Order not found", 404);
+    }
+
+    // Only log if status has changed
+    let updateOps = {
+      $set: {
+        paymentStatus: mappedStatus,
+        paymentResponse: response,
+      },
+    };
+
+    if (order.paymentStatus !== mappedStatus) {
+      updateOps.$push = {
+        paymentAttempts: {
+          status: mappedStatus,
+          response,
+          attemptedAt: new Date(),
+        },
+      };
+    }
+
+    const updatedOrder = await PhonepeOrderModal.findOneAndUpdate(
+      { merchantTransactionId: merchantOrderId },
       updateOps,
       { new: true }
     );
@@ -257,38 +392,6 @@ exports.failedPayment = async (req, res) => {
   } catch (err) {
     console.error("Failed payment sync error:", err);
     return handleErrorMessages(res, "Failed to sync payment failure");
-  }
-};
-
-exports.cancelOrder = async (req, res) => {
-  try {
-    const { merchantOrderId } = req.body;
-    if (!merchantOrderId) {
-      return handleErrorMessages(res, "merchantOrderId is required", 400);
-    }
-
-    const order = await PhonepeOrderModal.findOne({ merchantOrderId });
-    if (!order) {
-      return handleErrorMessages(res, "Order not found", 404);
-    }
-
-    if (order.paymentStatus === "PAID" || order.paymentStatus === "SUCCESS") {
-      return handleErrorMessages(res, "Cannot cancel a completed payment", 400);
-    }
-
-    order.paymentStatus = "CANCELLED";
-    order.paymentAttempts = order.paymentAttempts || [];
-    order.paymentAttempts.push({
-      status: "CANCELLED",
-      response: { message: "Order cancelled by user" },
-      attemptedAt: new Date(),
-    });
-    await order.save();
-
-    return handleSuccessMessages(res, "Payment cancelled successfully", {});
-  } catch (err) {
-    console.error("Error cancelling payment:", err);
-    return handleErrorMessages(res, "Failed to cancel payment");
   }
 };
 

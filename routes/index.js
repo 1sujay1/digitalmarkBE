@@ -23,12 +23,13 @@ const {
 } = require("../controllers/productController");
 
 const {
-  createOrder,
   verifyPayment,
   failedPayment,
   getUserProducts,
   isUserAdmin,
-  getOrderStatus,
+  createPayment,
+  fetchPaymentOrderStatus,
+  cancelOrder,
 } = require("../controllers/phonepeController");
 const {
   addToCart,
@@ -37,12 +38,12 @@ const {
   clearCart,
   removeCartItem, // Import the new controller function
 } = require("../controllers/cartController");
-const {
-  uploadSingleFile,
-  uploadMultipleFiles,
-} = require("../controllers/uploadController");
+// const {
+//   uploadSingleFile,
+//   uploadMultipleFiles,
+// } = require("../controllers/uploadController");
 const authorize = require("../middleware/authMiddleware");
-const multer = require("multer");
+// const multer = require("multer");
 
 const roles = {
   admin: ["ADMIN"],
@@ -76,15 +77,15 @@ module.exports = (razorpayInstance) => {
 
   // Order Routes
   router.post(
-    "/create-order",
+    "/create-payment",
     authorize(true, roles.customerAdmin),
-    createOrder
+    createPayment
   );
   // New getOrderStatus route
   router.get(
     "/order-status/:merchantOrderId",
     authorize(true, roles.customerAdmin),
-    getOrderStatus
+    fetchPaymentOrderStatus
   );
 
   router.post(
@@ -103,6 +104,11 @@ module.exports = (razorpayInstance) => {
     getUserProducts
   );
 
+  router.post(
+    "/cancel-order",
+    authorize(true, roles.customerAdmin),
+    cancelOrder
+  );
   // Cart Routes
   router.post("/cart/add", authorize(false, roles.customerAdmin), addToCart);
   router.get("/cart", authorize(true, roles.customerAdmin), getMyCart);

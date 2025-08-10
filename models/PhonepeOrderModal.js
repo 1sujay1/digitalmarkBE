@@ -10,9 +10,13 @@ const PhonepeOrderSchema = new mongoose.Schema(
       },
     ],
     amountPaid: Number, // in INR
-    merchantTransactionId: { type: String, unique: true }, // PhonePe's transaction ID
-    merchantOrderId: { type: String }, // optional if you want to store your own order ref
-    paymentStatus: { type: String, default: "PENDING" }, // PENDING, SUCCESS, FAILED
+    phonepeOrderId: { type: String, unique: true }, // PhonePe's transaction ID
+    merchantOrderId: { type: String, unique: true }, // optional if you want to store your own order ref
+    paymentStatus: {
+      type: String,
+      default: "PENDING",
+      enum: ["SUCCESS", "PAID", "FAILED", "CANCELLED", "PENDING"],
+    }, // PENDING, SUCCESS, FAILED
     createdAt: { type: Date, default: Date.now },
     paymentResponse: {
       type: mongoose.Schema.Types.Mixed, // stores raw PhonePe API response
@@ -25,7 +29,10 @@ const PhonepeOrderSchema = new mongoose.Schema(
     isDeleted: { type: Boolean, default: false },
     paymentAttempts: [
       {
-        status: { type: String, enum: ["SUCCESS", "FAILED"] },
+        status: {
+          type: String,
+          enum: ["SUCCESS", "FAILED", "CANCELLED", "PENDING", "PAID"],
+        },
         response: mongoose.Schema.Types.Mixed,
         attemptedAt: { type: Date, default: Date.now },
       },
