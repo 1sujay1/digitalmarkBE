@@ -1,6 +1,6 @@
 const { PhonepeOrderModal, ProductModal, CartModal } = require("../models");
 const phonepeClient = require("../utils/phonepe");
-const { randomUUID } = require("crypto");
+const { randomUUID, createHash, timingSafeEqual } = require("crypto");
 const {
   CreateSdkOrderRequest,
   FetchPaymentStatusRequest,
@@ -320,6 +320,77 @@ exports.getUserProducts = async (req, res) => {
   } catch (err) {
     console.error("Fetching user products failed:", err);
     return handleErrorMessages(res, "Could not fetch user products");
+  }
+};
+exports.phonepeWebHook = async (req, res) => {
+  try {
+    // Store your PhonePe webhook credentials in ENV variables
+    const WEBHOOK_USERNAME = process.env.PHONEPE_WEBHOOK_USER;
+    const WEBHOOK_PASSWORD = process.env.PHONEPE_WEBHOOK_PASS;
+    console.log("PhonePe Webhook received:", req.body);
+    const receivedAuth = req.header("Authorization");
+    console.log("Received Authorization:", receivedAuth);
+    if (!receivedAuth) {
+      return handleErrorMessages(res, "Authorization header is missing", 401);
+    }
+    // 2. Compute expected hash
+    const expectedHash = createHash("sha256")
+      .update(`${WEBHOOK_USERNAME}:${WEBHOOK_PASSWORD}`)
+      .digest("hex");
+    console.log("Expected Hash:", expectedHash);
+    // Normalize incoming header by stripping "SHA256(" and ")"
+    const normalizedAuth = receivedAuth
+      .trim()
+      .replace(/^SHA256\(/i, "") // remove starting SHA256(
+      .replace(/\)$/i, ""); // remove ending )
+
+    console.log("Normalized Authorization:", normalizedAuth);
+    // Compare in a timing-safe way
+    const cryptoCompare = timingSafeEqual(
+      Buffer.from(normalizedAuth, "utf8"),
+      Buffer.from(expectedHash, "utf8")
+    );
+    console.log("Crypto Compare Result:", cryptoCompare);
+    if (!cryptoCompare) {
+      console.error("Authorization failed");
+      return handleErrorMessages(res, "Unauthorized access", 401);
+    }
+    const { event, payload } = req.body;
+    console.log("Webhook received:", event, payload);
+    // Example: Update DB based on event type
+    if (event === "checkout.order.completed") {
+      // Mark order as paid
+      console.log(`Order ${payload.orderId} COMPLETED`);
+    } else if (event === "checkout.order.failed") {
+      console.log(`Order ${payload.orderId} FAILED`);
+    }
+
+    const order = await PhonepeOrderModal.findOne({
+      phonepeOrderId: payload.orderId,
+    });
+    if (!order) {
+      return handleErrorMessages(res, "Order not found", 404);
+    }
+
+    const mappedStatus = mapPhonepeStatus(payload.state);
+    if (order.paymentStatus === mappedStatus) {
+      return handleSuccessMessages(res, "No status change", {});
+    }
+
+    order.paymentStatus = mappedStatus;
+    order.paymentResponse = req.body;
+    order.paymentAttempts.push({
+      status: mappedStatus,
+      response: req.body,
+      attemptedAt: new Date(),
+    });
+
+    await order.save();
+
+    return handleSuccessMessages(res, "Webhook processed successfully", {});
+  } catch (err) {
+    console.error("Webhook processing error:", err);
+    return handleErrorMessages(res, "Failed to process webhook");
   }
 };
 exports.isUserAdmin = async (req, res) => {

@@ -30,6 +30,7 @@ const {
   createPayment,
   fetchPaymentOrderStatus,
   cancelOrder,
+  phonepeWebHook,
 } = require("../controllers/phonepeController");
 const {
   addToCart,
@@ -108,6 +109,11 @@ module.exports = (razorpayInstance) => {
     "/cancel-order",
     authorize(true, roles.customerAdmin),
     cancelOrder
+  );
+  router.post(
+    "/phonepe-webhook",
+    authorize(false, roles.customerAdmin),
+    phonepeWebHook
   );
   // Cart Routes
   router.post("/cart/add", authorize(false, roles.customerAdmin), addToCart);
